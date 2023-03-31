@@ -117,7 +117,9 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 name = "dos"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "plonky2",
+ "thiserror",
 ]
 
 [[package]]
@@ -466,6 +468,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
+name = "secp256k1"
+version = "0.1.0"
+dependencies = [
+ "plonky2",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -511,6 +520,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.12",
 ]
 
 [[package]]
