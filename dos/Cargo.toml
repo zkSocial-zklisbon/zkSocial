@@ -14,8 +14,7 @@ plonky2 = { git = "https://github.com/polymerdao/plonky2", rev = "4cb0b48df1d227
 plonky2_sha512 = { git = "https://github.com/polymerdao/plonky2-sha512", rev = "6504a307448fdcc8c2daf000150a1f5691a4f8ef" }
 thiserror = "1.0.40"
 ed25519-dalek = "1.0.1"
-rand = "0.7"
-rand_core = "0.5"
 
 [dev-dependencies]
 hex-literal = "0.3.4"
+rand = "0.7"

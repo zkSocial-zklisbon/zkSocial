@@ -87,7 +87,6 @@ mod tests {
     use ed25519_dalek::{Keypair, PublicKey, Signer, Verifier};
     use hex_literal::hex;
     use rand::rngs::OsRng;
-    use rand_core::{CryptoRng, RngCore};
 
     #[test]
     fn it_works_original_voucher_proof_and_verify() {
