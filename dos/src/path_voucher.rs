@@ -1,7 +1,19 @@
+use std::path::Path;
+
 use crate::{
-    utils::get_circuit_builder_and_partial_witness, voucher::Voucher, PublicKey, Signature, C, D,
-    F, *,
+    utils::get_circuit_builder_and_partial_witness, voucher::Voucher, EDDSATargets, PublicKey,
+    Signature, C, D, F, *,
 };
+
+pub struct PathVoucherTargets {
+    pub(crate) inner_voucher_origin: Vec<BoolTarget>,
+    pub(crate) inner_origin_targets: Vec<BoolTarget>,
+    pub(crate) current_origin_targets: Vec<BoolTarget>,
+    pub(crate) inner_voucher_degree: Target,
+    pub(crate) current_degree: Target,
+    pub(crate) one_target: Target,
+    pub(crate) eddsa: EDDSATargets,
+}
 
 // todo: add expiry timestamp to carry forward
 pub struct PathVoucher {
@@ -24,14 +36,51 @@ impl Voucher for PathVoucher {
         signature: Signature,
         input_degree: F,
     ) -> Self {
+        // verify inner voucher
+        if !inner_voucher.verify() {
+            panic!("Inner voucher proof is invalid!!")
+        }
         // TODO: distinguish between cases path and origin voucher cases
         let (circuit_builder, partial_witness) = get_circuit_builder_and_partial_witness();
 
         let inner_voucher_degree = inner_voucher.degree();
-        // verify inner voucher
-        inner_voucher.verify();
+        let degree = inner_voucher_degree + F::ONE;
+        let inner_voucher_origin = inner_voucher.origin();
 
-        let 
+        PathVoucher::increment_degree_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            inner_voucher_degree,
+            degree,
+        );
+
+        PathVoucher::origin_check_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            inner_voucher_origin,
+            origin,
+        );
+
+        add_eddsa_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            origin.clone(),
+            signature,
+            locus,
+        );
+
+        let circuit_data = circuit_builder.build::<C>();
+        let proof_with_pis = circuit_data
+            .prove(partial_witness)
+            .unwrap_or_else(|e| panic!("Invalid proof for current voucher, with error {e} !"));
+
+        Self {
+            origin,
+            degree,
+            locus,
+            circuit_data,
+            proof_data: proof_with_pis,
+        }
     }
 
     fn degree(&self) -> F {
@@ -49,6 +98,10 @@ impl Voucher for PathVoucher {
 
     fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
         &self.proof_data
+    }
+
+    fn origin(&self) -> PublicKey {
+        self.origin
     }
 }
 

@@ -8,15 +8,13 @@ use plonky2::{
         config::{GenericConfig, PoseidonGoldilocksConfig},
     },
 };
-use plonky2_ed25519::gadgets::eddsa::{fill_circuits, make_verify_circuits};
+pub use plonky2_ed25519::gadgets::eddsa::{fill_circuits, make_verify_circuits, EDDSATargets};
 // we can hash messages to a 256bit hash.
 pub type MessageDigest = [u8; 32];
 // ed25519 signatures are 512bits long.
 pub type Signature = [u8; 64];
 // ed25519 public key is 256 bits long.
 pub type PublicKey = [u8; 32];
-
-use plonky2_ed25519::gadgets::eddsa::EDDSATargets;
 
 pub fn add_eddsa_targets<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,

@@ -1,11 +1,6 @@
-use plonky2::iop::target::{Target, BoolTarget};
-
 use crate::{
-    add_eddsa_targets,
-    utils::get_circuit_builder_and_partial_witness,
-    voucher::Voucher,
-    EDDSATargets,
-    *,
+    add_eddsa_targets, utils::get_circuit_builder_and_partial_witness, voucher::Voucher,
+    BoolTarget, Target, *,
 };
 
 pub struct OriginVoucher {
@@ -20,7 +15,6 @@ pub struct OriginVoucherTargets {
     pub(crate) message: Vec<BoolTarget>,
     pub(crate) degree: Target,
     pub(crate) eddsa: EDDSATargets,
-
 }
 
 impl Voucher for OriginVoucher {
@@ -80,6 +74,10 @@ impl Voucher for OriginVoucher {
 
     fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
         &self.proof_data
+    }
+
+    fn origin(&self) -> PublicKey {
+        self.origin
     }
 }
 

@@ -13,4 +13,5 @@ pub(crate) trait Voucher {
     fn is_origin(&self) -> bool;
     fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>;
     fn verify(&self) -> bool;
+    fn origin(&self) -> PublicKey;
 }
