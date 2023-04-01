@@ -296,7 +296,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "ed25519_proofs",
- "plonky2 0.1.3",
+ "hex-literal",
+ "keccak",
+ "plonky2",
  "thiserror",
 ]
 
@@ -304,6 +306,7 @@ dependencies = [
 name = "ed25519_proofs"
 version = "0.1.0"
 dependencies = [
+ "plonky2",
  "plonky2_ed25519",
 ]
 
@@ -440,6 +443,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hex-literal"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
+
+[[package]]
 name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,6 +484,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
+]
+
+[[package]]
+name = "keccak"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3afef3b6eff9ce9d8ff9b3601125eec7f0c8cbac7abd14f355d053fa56c98768"
+dependencies = [
+ "cpufeatures",
 ]
 
 [[package]]
@@ -648,31 +666,8 @@ dependencies = [
  "log",
  "maybe_rayon",
  "num",
- "plonky2_field 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
- "plonky2_util 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
- "rand",
- "rand_chacha",
- "serde",
- "static_assertions",
- "unroll",
-]
-
-[[package]]
-name = "plonky2"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2a3d3069fc716f2733c4bafeaf57c256e507f0a599fc206f41ef273568ca2b7"
-dependencies = [
- "ahash",
- "anyhow",
- "hashbrown",
- "itertools",
- "keccak-hash 0.8.0",
- "log",
- "num",
- "plonky2_field 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "plonky2_maybe_rayon",
- "plonky2_util 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "plonky2_field",
+ "plonky2_util",
  "rand",
  "rand_chacha",
  "serde",
@@ -689,7 +684,7 @@ dependencies = [
  "itertools",
  "maybe_rayon",
  "num",
- "plonky2 0.1.0",
+ "plonky2",
  "plonky2_u32",
  "serde",
 ]
@@ -707,12 +702,12 @@ dependencies = [
  "keccak-hash 0.10.0",
  "log",
  "num",
- "plonky2 0.1.0",
+ "plonky2",
  "plonky2_ecdsa",
- "plonky2_field 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
+ "plonky2_field",
  "plonky2_sha512",
  "plonky2_u32",
- "plonky2_util 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
+ "plonky2_util",
  "rand",
  "rand_chacha",
  "rayon",
@@ -725,41 +720,16 @@ dependencies = [
 [[package]]
 name = "plonky2_field"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef0b0cfed734e8aec93ee0b49e3067a27111c355b9263fb1418bfe4c80656d12"
-dependencies = [
- "anyhow",
- "itertools",
- "num",
- "plonky2_util 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand",
- "serde",
- "static_assertions",
- "unroll",
-]
-
-[[package]]
-name = "plonky2_field"
-version = "0.1.0"
 source = "git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62#4cb0b48df1d227d5461a4c28ed025aaea64e2e62"
 dependencies = [
  "anyhow",
  "itertools",
  "num",
- "plonky2_util 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
+ "plonky2_util",
  "rand",
  "serde",
  "static_assertions",
  "unroll",
-]
-
-[[package]]
-name = "plonky2_maybe_rayon"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "655cdcdb13c260cdb42b29b55247f2f66479d14342b6be3dc688efc54d3e24c4"
-dependencies = [
- "rayon",
 ]
 
 [[package]]
@@ -773,11 +743,11 @@ dependencies = [
  "keccak-hash 0.10.0",
  "log",
  "num",
- "plonky2 0.1.0",
+ "plonky2",
  "plonky2_ecdsa",
- "plonky2_field 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
+ "plonky2_field",
  "plonky2_u32",
- "plonky2_util 0.1.0 (git+https://github.com/polymerdao/plonky2?rev=4cb0b48df1d227d5461a4c28ed025aaea64e2e62)",
+ "plonky2_util",
  "rand",
  "rand_chacha",
  "rayon",
@@ -795,14 +765,8 @@ dependencies = [
  "anyhow",
  "itertools",
  "num",
- "plonky2 0.1.0",
+ "plonky2",
 ]
-
-[[package]]
-name = "plonky2_util"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a7f1a85a8cb948af5e47da488bd78c6d18d3d8cb25b490676f3b9f68bc5b5c8"
 
 [[package]]
 name = "plonky2_util"
