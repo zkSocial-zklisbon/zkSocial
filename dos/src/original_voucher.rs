@@ -23,39 +23,40 @@ pub struct OriginVoucherTargets {
     pub(crate) eddsa: Ed25519Targets,
 }
 
-impl Voucher for OriginVoucher {
-    fn origin_vouch(origin: PublicKey, signature: Signature) -> Self {
-        let (mut circuit_builder, mut partial_witness) = get_circuit_builder_and_partial_witness();
 
-        // Steps:
-        //  1. have PI target for the degree to be zero (constant target == 0)
-        //  2. Verify signature of origin signing (message hash of) origin
+fn origin_vouch(origin: PublicKey, signature: Signature) -> OriginVoucher {
+    let (mut circuit_builder, mut partial_witness) = get_circuit_builder_and_partial_witness();
 
-        let voucher_targets =
-            make_all_origin_voucher_targets(&mut circuit_builder);
-        let zero_degree_target = circuit_builder.add_virtual_target();
-        let message: [u8; MESSAGE_LENGTH] = origin.clone();
-        add_eddsa_targets(
-            &mut circuit_builder,
-            &mut partial_witness,
-            message,
-            signature,
-            origin,
-        );
+    // Steps:
+    //  1. have PI target for the degree to be zero (constant target == 0)
+    //  2. Verify signature of origin signing (message hash of) origin
 
-        circuit_builder.register_public_input(zero_degree_target);
-        partial_witness.set_target(zero_degree_target, F::ZERO);
+    // let voucher_targets =
+    //     make_all_origin_voucher_targets(&mut circuit_builder);
+    let zero_degree_target = circuit_builder.add_virtual_target();
+    let message: [u8; MESSAGE_LENGTH] = origin.clone();
+    add_eddsa_targets(
+        &mut circuit_builder,
+        &mut partial_witness,
+        message,
+        signature,
+        origin,
+    );
 
-        let circuit_data = circuit_builder.build::<C>();
-        let proof_with_pis = circuit_data.prove(partial_witness).unwrap();
+    circuit_builder.register_public_input(zero_degree_target);
+    partial_witness.set_target(zero_degree_target, F::ZERO);
 
-        Self {
-            origin,
-            circuit_data,
-            proof_data: proof_with_pis,
-        }
+    let circuit_data = circuit_builder.build::<C>();
+    let proof_with_pis = circuit_data.prove(partial_witness).unwrap();
+
+    OriginVoucher {
+        origin,
+        circuit_data,
+        proof_data: proof_with_pis,
     }
+}
 
+impl Voucher for OriginVoucher {
     fn degree(&self) -> F {
         F::ZERO
     }
@@ -70,42 +71,47 @@ impl Voucher for OriginVoucher {
     }
 
     fn incremental_vouch(
-        existing_voucher: Self,
+        existing_voucher: impl Voucher,
         origin: PublicKey,
         locus: PublicKey,
         signature: Signature,
+        input_degree: F,
     ) -> Self {
-        todo!("Implement me");
+        unimplemented!("Implement me");
     }
 
     fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>{
         &self.proof_data
-    };
-}
+    }
 
-pub fn make_all_origin_voucher_targets<F: RichField + Extendable<D>, const D: usize>(
-    circuit_builder: &mut CircuitBuilder<F, D>,
-) -> OriginVoucherTargets {
-    // allocate a vector of binary (bool) targets 
-    // for each of the origin, signature and message
-    let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
-    let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
-    let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
-    
-    // add a single target for the degree
-    let degree_target: Target = circuit_builder.add_virtual_target();
-
-
-    let eddsa = make_verify_circuits(circuit_builder, 32);
-
-    OriginVoucherTargets {
-        origin,
-        signature,
-        message,
-        degree,
-        eddsa,
+    fn origin(&self) -> PublicKey {
+        self.origin
     }
 }
+
+// pub fn make_all_origin_voucher_targets<F: RichField + Extendable<D>, const D: usize>(
+//     circuit_builder: &mut CircuitBuilder<F, D>,
+// ) -> OriginVoucherTargets {
+//     // allocate a vector of binary (bool) targets 
+//     // for each of the origin, signature and message
+//     let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
+//     let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
+//     let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
+    
+//     // add a single target for the degree
+//     let degree_target: Target = circuit_builder.add_virtual_target();
+
+
+//     // let eddsa = make_verify_circuits(circuit_builder, 32);
+
+//     OriginVoucherTargets {
+//         origin,
+//         signature,
+//         message,
+//         degree,
+//         eddsa,
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -113,7 +119,6 @@ mod tests {
     use ed25519_dalek::{Keypair, PublicKey, Signer, Verifier};
     use hex_literal::hex;
     use rand::rngs::OsRng;
-    use rand_core::{CryptoRng, RngCore};
 
     #[test]
     fn it_works_original_voucher_proof_and_verify() {
@@ -123,7 +128,7 @@ mod tests {
         let message = origin.clone();
         let signature = key_pair.sign(&message).to_bytes();
 
-        let origin_voucher = OriginVoucher::origin_vouch(origin, signature);
+        let origin_voucher: OriginVoucher = origin_vouch(origin, signature);
         assert!(origin_voucher.verify());
     }
 

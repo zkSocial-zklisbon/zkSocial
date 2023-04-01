@@ -1,14 +1,9 @@
 use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::witness::PartialWitness,
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::CircuitConfig,
-        config::{GenericConfig, PoseidonGoldilocksConfig},
-    },
+    field::extension::Extendable, hash::hash_types::RichField, iop::witness::PartialWitness,
+    plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_ed25519::gadgets::eddsa::{EDDSATargets, fill_circuits, make_verify_circuits};
+
 // we can hash messages to a 256bit hash.
 pub type MessageDigest = [u8; 32];
 // ed25519 signatures are 512bits long.

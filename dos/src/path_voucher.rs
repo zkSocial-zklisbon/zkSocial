@@ -1,9 +1,69 @@
 use crate::{
-    utils::get_circuit_builder_and_partial_witness, voucher::Voucher, PublicKey, Signature, C, D,
-    F, *,
+    utils::get_circuit_builder_and_partial_witness, voucher::Voucher, PublicKey,
+    Signature, C, D, F, *,
 };
 
+use ed25519_proofs::Ed25519Targets;
+
+/// Adds targets to circuit to verify increment degree logic.
+/// Additionally, it sets partial witness values to targets
+pub fn increment_degree_targets(
+    builder: &mut CircuitBuilder<F, D>,
+    partial_witness: &mut PartialWitness<F>,
+    input_degree: F,
+    output_degree: F,
+) {
+    let input_degree_target = builder.add_virtual_target();
+    let output_degree_target = builder.add_virtual_target();
+
+    builder.register_public_input(output_degree_target);
+
+    let one_target = builder.one();
+    let increment_target = builder.add(input_degree_target, one_target);
+
+    builder.connect(output_degree_target, increment_target);
+
+    partial_witness.set_target(input_degree_target, input_degree);
+    partial_witness.set_target(output_degree_target, output_degree);
+}
+
+/// Adds targets to circuit to verify origin invariance across vouchers logic.
+/// Additionally, it sets partial witness values to targets
+pub fn origin_check_targets(
+    builder: &mut CircuitBuilder<F, D>,
+    partial_witness: &mut PartialWitness<F>,
+    previous_origin: PublicKey,
+    current_origin: PublicKey,
+) {
+    // todo: check that the len of both previous and current origin pubkeys is == 32
+    // this should already be done in the ed25519 plonky2 lib (to be confirmed)
+    let origin_len_in_bits = previous_origin.len() * 8;
+    let previous_origin_bits: Vec<bool> = array_to_bits(&previous_origin);
+    let current_origin_bits: Vec<bool> = array_to_bits(&current_origin);
+
+    for i in 0..origin_len_in_bits {
+        let previous_origin_target = builder.add_virtual_bool_target_safe();
+        let current_origin_target = builder.add_virtual_bool_target_safe();
+
+        builder.connect(previous_origin_target.target, current_origin_target.target);
+
+        partial_witness.set_bool_target(previous_origin_target, previous_origin_bits[i]);
+        partial_witness.set_bool_target(current_origin_target, current_origin_bits[i]);
+    }
+}
+
+pub struct PathVoucherTargets {
+    pub(crate) inner_voucher_origin: Vec<BoolTarget>,
+    pub(crate) inner_origin_targets: Vec<BoolTarget>,
+    pub(crate) current_origin_targets: Vec<BoolTarget>,
+    pub(crate) inner_voucher_degree: Target,
+    pub(crate) current_degree: Target,
+    pub(crate) one_target: Target,
+    pub(crate) eddsa: Ed25519Targets,
+}
+
 // todo: add expiry timestamp to carry forward
+/// [`PathVoucher`] represents a degree > 0 [`Voucher`] instance
 pub struct PathVoucher {
     pub(crate) origin: PublicKey,
     pub(crate) locus: PublicKey,
@@ -13,10 +73,6 @@ pub struct PathVoucher {
 }
 
 impl Voucher for PathVoucher {
-    fn origin_vouch(origin: PublicKey, signature: Signature) -> Self {
-        todo!("Implement me")
-    }
-
     fn incremental_vouch(
         inner_voucher: impl Voucher,
         origin: PublicKey,
@@ -24,14 +80,51 @@ impl Voucher for PathVoucher {
         signature: Signature,
         input_degree: F,
     ) -> Self {
+        // verify inner voucher
+        if !inner_voucher.verify() {
+            panic!("Inner voucher proof is invalid!!")
+        }
         // TODO: distinguish between cases path and origin voucher cases
-        let (circuit_builder, partial_witness) = get_circuit_builder_and_partial_witness();
+        let (mut circuit_builder, mut partial_witness) = get_circuit_builder_and_partial_witness();
 
         let inner_voucher_degree = inner_voucher.degree();
-        // verify inner voucher
-        inner_voucher.verify();
+        let degree = inner_voucher_degree + F::ONE;
+        let inner_voucher_origin = inner_voucher.origin();
 
-        let 
+        increment_degree_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            inner_voucher_degree,
+            degree,
+        );
+
+        origin_check_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            inner_voucher_origin,
+            origin,
+        );
+
+        add_eddsa_targets(
+            &mut circuit_builder,
+            &mut partial_witness,
+            origin.clone(),
+            signature,
+            locus,
+        );
+
+        let circuit_data = circuit_builder.build::<C>();
+        let proof_with_pis = circuit_data
+            .prove(partial_witness)
+            .unwrap_or_else(|e| panic!("Invalid proof for current voucher, with error {e} !"));
+
+        Self {
+            origin,
+            degree,
+            locus,
+            circuit_data,
+            proof_data: proof_with_pis,
+        }
     }
 
     fn degree(&self) -> F {
@@ -50,50 +143,9 @@ impl Voucher for PathVoucher {
     fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
         &self.proof_data
     }
-}
 
-impl PathVoucher {
-    pub fn increment_degree_targets(
-        builder: &mut CircuitBuilder<F, D>,
-        partial_witness: &mut PartialWitness<F>,
-        input_degree: F,
-        output_degree: F,
-    ) {
-        let input_degree_target = builder.add_virtual_target();
-        let output_degree_target = builder.add_virtual_target();
-
-        builder.register_public_input(output_degree_target);
-
-        let one_target = builder.one();
-        let increment_target = builder.add(input_degree_target, one_target);
-
-        builder.connect(output_degree_target, increment_target);
-
-        partial_witness.set_target(input_degree_target, input_degree);
-        partial_witness.set_target(output_degree_target, output_degree);
-    }
-
-    pub fn origin_check_targets(
-        builder: &mut CircuitBuilder<F, D>,
-        partial_witness: &mut PartialWitness<F>,
-        previous_origin: PublicKey,
-        current_origin: PublicKey,
-    ) {
-        // todo: check that the len of both previous and current origin pubkeys is == 32
-        // this should already be done in the ed25519 plonky2 lib (to be confirmed)
-        let origin_len_in_bits = previous_origin.len() * 8;
-        let previous_origin_bits: Vec<bool> = array_to_bits(&previous_origin);
-        let current_origin_bits: Vec<bool> = array_to_bits(&current_origin);
-
-        for i in 0..origin_len_in_bits {
-            let previous_origin_target = builder.add_virtual_bool_target_safe();
-            let current_origin_target = builder.add_virtual_bool_target_safe();
-
-            builder.connect(previous_origin_target.target, current_origin_target.target);
-
-            partial_witness.set_bool_target(previous_origin_target, previous_origin_bits[i]);
-            partial_witness.set_bool_target(current_origin_target, current_origin_bits[i]);
-        }
+    fn origin(&self) -> PublicKey {
+        self.origin
     }
 }
 
