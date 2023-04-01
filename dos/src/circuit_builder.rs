@@ -1,7 +1,8 @@
 use plonky2::{
-    iop::{target::Target, witness::{PartialWitness, WitnessWrite}}, 
+    iop::{target::{Target, BoolTarget}, witness::{PartialWitness, WitnessWrite}}, 
     plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData},
     hash::poseidon::PoseidonHash,
+    field::goldilocks_extensions::GoldilocksField;
 };
 use simple_crypto::{C, D, DIGEST_LENGTH, F, PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH};
 
@@ -76,10 +77,36 @@ pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_c
 
     let inner_origin_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
     let inner_locus_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
+    let inner_degree_target = builder.add_virtual_target();
+
+    // inner and outer origin must be the same
+    for i in 0..PUBLIC_KEY_LENGTH {
+        builder.connect(outer_origin_targets[i], inner_origin_targets[i]);
+    }
+
+    // outer locus and origin should be distinct
+    let mut bool_cumulative_target = builder.is_equal(outer_locus_targets[0], outer_origin_targets[0]);
+    for i in 1..PUBLIC_KEY_LENGTH {
+        let equality_element_target = builder.is_equal(outer_locus_targets[i], outer_origin_targets[i]);
+        bool_cumulative_target = builder.and(bool_cumulative_target, equality_element_target);
+    }
+    let origin_and_locus_must_not_be_equal_target = builder.not(bool_cumulative_target);
+
+    // the outer degree must be one more than the inner degree
+    let one_target = builder.constant(F::ONE);
+    let should_be_inner_degree_plus_one_target = builder.add(inner_degree_target, one_target);
+    builder.connect(should_be_inner_degree_plus_one_target, outer_degree_target);
+
+    // 
+
+
     let inner_proof_targets = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
     let inner_verify_data_targets = builder.add_virtual_verifier_data(inner_circuit_data.common.config.fri_config.cap_height);
 
     builder.verify_proof::<C>(&inner_proof_targets, &inner_verify_data_targets, &inner_circuit_data.common);
+    
+    
+    
     unimplemented!();
 }
 
