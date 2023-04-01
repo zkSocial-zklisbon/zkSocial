@@ -24,8 +24,8 @@ pub type PublicKey = [F; PUBLIC_KEY_LENGTH];
 pub type PrivateKey = [F; PRIVATE_KEY_LENGTH];
 
 pub struct KeyPair {
-    pub(crate) public_key: PublicKey,
-    pub(crate) private_key: PrivateKey,
+    pub public_key: PublicKey,
+    pub private_key: PrivateKey,
 }
 
 impl KeyPair {

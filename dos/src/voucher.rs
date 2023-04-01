@@ -66,5 +66,33 @@ impl Voucher {
         }
     }
 
+    fn extend_voucher(
+        &self,
+        inner_private_key_locus: PrivateKey,
+        outer_locus: PublicKey,
+    ) -> Voucher {
+        let origin = self.origin.clone();
+        let inner_locus = self.locus.clone();
+    }
+
     // fn verify
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use simple_crypto::KeyPair;
+    
+    #[test]
+    fn it_works_origin_voucher() {
+        let key_pair = KeyPair::generate_key_pair();
+        let origin_voucher = Voucher::new_origin(key_pair.public_key, key_pair.private_key);
+        
+        match origin_voucher.voucher_proof_data {
+            VoucherProofData::PathProofData { .. } => panic!("Expected origin voucher proof data"),
+            VoucherProofData::OriginProofData { circuit_data, proof_data } => {
+                assert!(circuit_data.verify(proof_data).is_ok());
+            }
+        }
+    }
 }
