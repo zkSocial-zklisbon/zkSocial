@@ -7,8 +7,9 @@ use plonky2::{
     self,
     field::goldilocks_field::GoldilocksField,
     field::types::Field,
-    iop::witness::WitnessWrite,
+    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
+        circuit_builder::CircuitBuilder,
         circuit_data::CircuitData,
         config::{GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
@@ -16,7 +17,7 @@ use plonky2::{
 };
 
 mod original_voucher;
-// mod path_voucher;
+mod path_voucher;
 mod utils;
 mod voucher;
 
