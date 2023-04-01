@@ -9,10 +9,10 @@ use plonky2::{
     hash::{poseidon::PoseidonHash},
 };
 
-pub(crate) const D: usize = 2;
-pub(crate) type C = PoseidonGoldilocksConfig;
-pub(crate) type F = <C as GenericConfig<D>>::F;
-pub(crate) type PlonkyProof = ProofWithPublicInputs<F, C, 2>;
+pub const D: usize = 2;
+pub type C = PoseidonGoldilocksConfig;
+pub type F = <C as GenericConfig<D>>::F;
+pub type PlonkyProof = ProofWithPublicInputs<F, C, 2>;
 
 pub const PUBLIC_KEY_LENGTH: usize = 4;
 pub const PRIVATE_KEY_LENGTH: usize = 4;

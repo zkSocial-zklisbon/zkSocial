@@ -1,4 +1,8 @@
-use plonky2::{iop::target::Target, plonk::circuit_builder::CircuitBuilder};
+use plonky2::{
+    iop::{target::Target, witness::{PartialWitness, WitnessWrite}}, 
+    plonk::circuit_builder::CircuitBuilder,
+    hash::poseidon::PoseidonHash,
+};
 use simple_crypto::{C, D, DIGEST_LENGTH, F, PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH};
 
 pub struct VoucherTargets {
@@ -6,7 +10,7 @@ pub struct VoucherTargets {
     pub(crate) locus_targets: Vec<Target>,
     pub(crate) signature_targets: Vec<Target>,
     pub(crate) degree_target: Target,
-    pub(crate) private_key_targts: Vec<Target>,
+    pub(crate) private_key_targets: Vec<Target>,
 }
 
 pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> VoucherTargets {
@@ -23,9 +27,11 @@ pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) ->
     let private_key_targets = builder.add_virtual_targets(PRIVATE_KEY_LENGTH);
     let topic_public_key_targets = builder.add_virtual_targets(DIGEST_LENGTH);
 
+    let zero_target = builder.zero();
+
     // topic for public key is [F::ZERO; 4]
     for i in 0..DIGEST_LENGTH {
-        builder.connect(topic_public_key_targets[i], builder.zero());
+        builder.connect(topic_public_key_targets[i], zero_target);
     }
 
     // for origin voucher the origin and locus must be the same
@@ -34,22 +40,22 @@ pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) ->
     }
 
     // the degree must be zero
-    builder.connect(degree_target, builder.zero());
+    builder.connect(degree_target, zero_target);
 
     // the prover must know the private key, so it must hash to public key
     let should_be_public_key_origin_targets = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
-        [private_key_targets, topic_public_key_targets].concat(),
+        [private_key_targets.clone(), topic_public_key_targets].concat(),
     );
     for i in 0..PUBLIC_KEY_LENGTH {
-        builder.connect(origin_targets[i], should_be_public_key_origin_targets[i]);
+        builder.connect(origin_targets[i], should_be_public_key_origin_targets.elements[i]);
     }
 
     // the prover must sign the locus correctly, so they should hash the public key
     // (origin) with the message (locuss)
     let should_be_signature_targets =
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>([origin_targets, locus_targets].concat());
+        builder.hash_n_to_hash_no_pad::<PoseidonHash>([origin_targets.clone(), locus_targets.clone()].concat());
     for i in 0..DIGEST_LENGTH {
-        builder.connect(signature_targets[i], should_be_signature_targets[i]);
+        builder.connect(signature_targets[i], should_be_signature_targets.elements[i]);
     }
 
     VoucherTargets {
@@ -58,5 +64,45 @@ pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) ->
         signature_targets,
         degree_target,
         private_key_targets,
+    }
+}
+
+pub fn fill_circuit(
+    partial_witness: &mut PartialWitness<F>, 
+    voucher_targets: VoucherTargets, 
+    origin: [F; PUBLIC_KEY_LENGTH],
+    locus: [F; PUBLIC_KEY_LENGTH],
+    private_key: [F; PRIVATE_KEY_LENGTH],
+    signature: [F; DIGEST_LENGTH],
+) {
+    let VoucherTargets {
+        origin_targets,
+        locus_targets,
+        signature_targets,
+        degree_target,
+        private_key_targets,
+    } = voucher_targets;
+
+    // fill origin targets with origin entries
+    for i in 0..PUBLIC_KEY_LENGTH {
+        partial_witness.set_target(origin_targets[i], origin[i]);
+    }
+
+    // fill locus targets with locus entries
+    for i in 0..PUBLIC_KEY_LENGTH {
+        partial_witness.set_target(locus_targets[i], locus[i]);
+    }
+
+    // fill signature targets with signature entries
+    for i in 0..DIGEST_LENGTH {
+        partial_witness.set_target(signature_targets[i], signature[i]);
+    }
+    
+    // todo: we already set degree to zero in the circuit, so this is redundant
+    // partial_witness.set_target(degree_target, F::ZERO);
+
+    // fill private key targets with private key entries
+    for i in 0..PRIVATE_KEY_LENGTH {
+        partial_witness.set_target(private_key_targets[i], private_key[i]);
     }
 }
