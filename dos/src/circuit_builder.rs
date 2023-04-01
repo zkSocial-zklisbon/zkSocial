@@ -4,11 +4,9 @@ use simple_crypto::{C, D, DIGEST_LENGTH, F, PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGT
 pub struct VoucherTargets {
     pub(crate) origin_targets: Vec<Target>,
     pub(crate) locus_targets: Vec<Target>,
+    pub(crate) signature_targets: Vec<Target>,
     pub(crate) degree_target: Target,
     pub(crate) private_key_targts: Vec<Target>,
-    pub(crate) topic_pulic_key_targets: Vec<Target>,
-    pub(crate) should_be_public_key_origin_targets: Vec<Target>,
-    pub(crate) should_be_signature_targets: Vec<Target>,
 }
 
 pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> VoucherTargets {
@@ -60,8 +58,5 @@ pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) ->
         signature_targets,
         degree_target,
         private_key_targets,
-        topic_public_key_targets,
-        should_be_public_key_origin_targets,
-        should_be_signature_targets,
     }
 }
