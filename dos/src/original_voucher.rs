@@ -1,12 +1,13 @@
-use plonky2::iop::target::{Target, BoolTarget};
+use plonky2::{iop::target::{Target, BoolTarget}, hash::hash_types::RichField, field::extension::Extendable};
 
 use crate::{
     add_eddsa_targets,
     utils::get_circuit_builder_and_partial_witness,
     voucher::Voucher,
-    EDDSATargets,
     *,
 };
+
+use ed25519_proofs::Ed25519Targets;
 
 pub struct OriginVoucher {
     pub(crate) origin: PublicKey,
@@ -19,8 +20,7 @@ pub struct OriginVoucherTargets {
     pub(crate) signature: Vec<BoolTarget>,
     pub(crate) message: Vec<BoolTarget>,
     pub(crate) degree: Target,
-    pub(crate) eddsa: EDDSATargets,
-
+    pub(crate) eddsa: Ed25519Targets,
 }
 
 impl Voucher for OriginVoucher {
@@ -31,9 +31,10 @@ impl Voucher for OriginVoucher {
         //  1. have PI target for the degree to be zero (constant target == 0)
         //  2. Verify signature of origin signing (message hash of) origin
 
-        let voucher_targets = make_all_voucher_targets(&mut circuit_builder);
+        let voucher_targets =
+            make_all_origin_voucher_targets(&mut circuit_builder);
         let zero_degree_target = circuit_builder.add_virtual_target();
-        let message = origin.clone();
+        let message: [u8; MESSAGE_LENGTH] = origin.clone();
         add_eddsa_targets(
             &mut circuit_builder,
             &mut partial_witness,
@@ -69,17 +70,40 @@ impl Voucher for OriginVoucher {
     }
 
     fn incremental_vouch(
-        existing_voucher: impl Voucher,
+        existing_voucher: Self,
         origin: PublicKey,
         locus: PublicKey,
         signature: Signature,
-        input_degree: F,
     ) -> Self {
         todo!("Implement me");
     }
 
-    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
+    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>{
         &self.proof_data
+    };
+}
+
+pub fn make_all_origin_voucher_targets<F: RichField + Extendable<D>, const D: usize>(
+    circuit_builder: &mut CircuitBuilder<F, D>,
+) -> OriginVoucherTargets {
+    // allocate a vector of binary (bool) targets 
+    // for each of the origin, signature and message
+    let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
+    let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
+    let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
+    
+    // add a single target for the degree
+    let degree_target: Target = circuit_builder.add_virtual_target();
+
+
+    let eddsa = make_verify_circuits(circuit_builder, 32);
+
+    OriginVoucherTargets {
+        origin,
+        signature,
+        message,
+        degree,
+        eddsa,
     }
 }
 
