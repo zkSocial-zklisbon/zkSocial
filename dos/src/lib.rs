@@ -15,6 +15,7 @@ use plonky2::{
         proof::ProofWithPublicInputs,
     },
 };
+use plonky2_sha512::circuit::array_to_bits;
 
 mod original_voucher;
 mod path_voucher;

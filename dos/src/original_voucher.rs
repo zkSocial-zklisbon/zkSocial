@@ -60,6 +60,10 @@ impl Voucher for OriginVoucher {
     ) -> Self {
         todo!("Implement me");
     }
+
+    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
+        &self.proof_data
+    }
 }
 
 #[cfg(test)]

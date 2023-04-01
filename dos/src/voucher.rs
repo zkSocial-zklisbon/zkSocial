@@ -1,4 +1,4 @@
-use crate::{PublicKey, Signature, F};
+use crate::{ProofWithPublicInputs, PublicKey, Signature, C, D, F};
 
 pub(crate) trait Voucher {
     fn origin_vouch(origin: PublicKey, signature: Signature) -> Self;
@@ -11,5 +11,6 @@ pub(crate) trait Voucher {
     ) -> Self;
     fn degree(&self) -> F;
     fn is_origin(&self) -> bool;
+    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>;
     fn verify(&self) -> bool;
 }
