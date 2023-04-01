@@ -1,6 +1,6 @@
 use plonky2::{
     iop::{target::Target, witness::{PartialWitness, WitnessWrite}}, 
-    plonk::circuit_builder::CircuitBuilder,
+    plonk::{circuit_builder::CircuitBuilder, circuit_data::CircuitData},
     hash::poseidon::PoseidonHash,
 };
 use simple_crypto::{C, D, DIGEST_LENGTH, F, PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH};
@@ -13,7 +13,7 @@ pub struct VoucherTargets {
     pub(crate) private_key_targets: Vec<Target>,
 }
 
-pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> VoucherTargets {
+pub fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> VoucherTargets {
     // allocate targets for the public inputs
     let origin_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
     let locus_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
@@ -67,7 +67,23 @@ pub(crate) fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) ->
     }
 }
 
-pub fn fill_circuit(
+pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_circuit_data: &CircuitData<F, C, D>) -> VoucherTargets {
+    // allocate targets for the public inputs
+    let outer_origin_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
+    let outer_locus_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
+    let outer_signature_targets = builder.add_virtual_targets(DIGEST_LENGTH);
+    let outer_degree_target = builder.add_virtual_target();
+
+    let inner_origin_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
+    let inner_locus_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
+    let inner_proof_targets = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
+    let inner_verify_data_targets = builder.add_virtual_verifier_data(inner_circuit_data.common.config.fri_config.cap_height);
+
+
+    unimplemented!();
+}
+
+pub fn fill_voucher_circuit(
     partial_witness: &mut PartialWitness<F>, 
     voucher_targets: VoucherTargets, 
     origin: [F; PUBLIC_KEY_LENGTH],

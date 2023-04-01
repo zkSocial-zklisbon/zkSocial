@@ -14,7 +14,10 @@ use plonky2::{
         proof::ProofWithPublicInputs},
     field::types::Field,
     iop::witness::PartialWitness, hash::poseidon::PoseidonHash};
-use crate::circuit_builder::{make_origin_voucher_circuit, fill_circuit};
+use crate::circuit_builder::{
+    make_origin_voucher_circuit, 
+    make_extended_voucher_circuit,
+    fill_voucher_circuit};
 
 pub struct Voucher {
     pub(crate) origin: PublicKey,
@@ -48,7 +51,7 @@ impl Voucher {
         let mut partial_witness = PartialWitness::<F>::new();
 
         let voucher_targets = make_origin_voucher_circuit(&mut circuit_builder);
-        fill_circuit(&mut partial_witness, voucher_targets, origin, locus, private_key, signature);
+        fill_voucher_circuit(&mut partial_witness, voucher_targets, origin, locus, private_key, signature);
 
         let circuit_data = circuit_builder.build::<C>();
         let proof_with_pis = 
@@ -71,8 +74,27 @@ impl Voucher {
         inner_private_key_locus: PrivateKey,
         outer_locus: PublicKey,
     ) -> Voucher {
-        let origin = self.origin.clone();
-        let inner_locus = self.locus.clone();
+        let outer_origin: PublicKey = self.origin.clone();
+        let inner_locus: PublicKey = self.locus.clone();
+
+        let outer_signature: Digest = 
+            PoseidonHash::hash_no_pad(
+                &[outer_origin, outer_locus].concat())
+                .elements;
+
+        let config = CircuitConfig::standard_recursion_zk_config();
+        let mut circuit_builder = CircuitBuilder::<F, D>::new(config);
+        let mut partial_witness = PartialWitness::<F>::new();
+        
+
+        let inner_circuit_data = match &self.voucher_proof_data {
+            VoucherProofData::PathProofData { .. } => unimplemented!(),
+            VoucherProofData::OriginProofData { circuit_data, .. } => {
+                circuit_data.clone()
+            },
+        };
+        let voucher_targets = make_extended_voucher_circuit(&mut circuit_builder, inner_circuit_data);
+        unimplemented!()
     }
 
     // fn verify
