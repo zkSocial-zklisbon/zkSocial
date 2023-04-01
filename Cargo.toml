@@ -2,6 +2,6 @@
 members = [
     "bin/edge",
     "bin/circle",
-    "crypto/ed25519",
+    "crypto/simple",
     "dos",
 ]

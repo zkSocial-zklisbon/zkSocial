@@ -105,10 +105,10 @@ fn make_origin_voucher_circuit<F: RichField + Extendable<D>, const D: usize>(
     // add a single target for the degree
     let degree_target: Target = circuit_builder.add_virtual_target();
 
-    // create targets for the origin address
-    for i in 0..PUBLIC_KEY_LENGTH_BITS {
-        origin_targets.push(circuit_builder.add_virtual_bool_target_safe());
-    }
+    // // create targets for the origin address
+    // for i in 0..PUBLIC_KEY_LENGTH_BITS {
+    //     origin_targets.push(circuit_builder.add_virtual_bool_target_safe());
+    // }
 
     // create targets for the signature
     for i in 0..SIGNATURE_LENGTH_BITS {
@@ -124,6 +124,8 @@ fn make_origin_voucher_circuit<F: RichField + Extendable<D>, const D: usize>(
     let ed25519_targets: Ed25519Targets =
         make_ed25519_verification_ciruit(circuit_builder, MESSAGE_LENGTH_BITS);
 
+
+
     OriginVoucherTargets {
         origin,
         signature,
@@ -132,6 +134,8 @@ fn make_origin_voucher_circuit<F: RichField + Extendable<D>, const D: usize>(
         eddsa,
     }
 }
+
+fn make_ed25519
 
 #[cfg(test)]
 mod tests {

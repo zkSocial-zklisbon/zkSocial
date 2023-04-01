@@ -1,18 +1,31 @@
-use crate::{ProofWithPublicInputs, PublicKey, Signature, C, D, F};
+use simple_crypto::{
+    F, C, D,
+    PublicKey,
+    PrivateKey,
+};
 
-use crate::path_voucher::PathVoucher;
+use plonky2::{plonk::circuit_data::CircuitData, proof::ProofWithPublicInputs};
 
-pub(crate) trait Voucher {
-    fn incremental_vouch(
-        existing_voucher: impl Voucher,
-        origin: PublicKey,
-        locus: PublicKey,
-        signature: Signature,
-        input_degree: F,
-    ) -> PathVoucher;
-    fn degree(&self) -> F;
-    fn is_origin(&self) -> bool;
-    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>;
-    fn verify(&self) -> bool;
-    fn origin(&self) -> PublicKey;
+pub struct Voucher {
+    pub(crate) origin: PublicKey,
+    pub(crate) locus: PublicKey,
+    pub(crate) degree: F,
+    pub(crate) voucher_proof_data: VoucherProofData,
+}
+
+pub enum VoucherProofData {
+    PathProofData {
+        pub(crate) circuit_data: CircuitData<F, C, D>,
+        pub(crate) proof_data: ProofWithPublicInputs<F, C, D>,
+    },
+    OriginProofData { 
+        pub(crate) circuit_data: CircuitData<F, C, D>,
+        pub(crate) proof_data: ProofWithPublicInputs<F, C, D>,
+    },
+}
+
+impl Voucher {
+    fn new_origin(origin: PublicKey) -> Self {
+        
+    }
 }

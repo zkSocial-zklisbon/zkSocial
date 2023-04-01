@@ -1,0 +1,20 @@
+[package]
+name = "dos"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.70"
+ed25519_proofs = { path = "../crypto/ed25519" }
+keccak = "0.1.3"
+hex-literal = "0.3.4"
+plonky2 = { git = "https://github.com/polymerdao/plonky2", rev = "4cb0b48df1d227d5461a4c28ed025aaea64e2e62" }
+plonky2_sha512 = { git = "https://github.com/polymerdao/plonky2-sha512", rev = "6504a307448fdcc8c2daf000150a1f5691a4f8ef" }
+thiserror = "1.0.40"
+ed25519-dalek = "1.0.1"
+
+[dev-dependencies]
+hex-literal = "0.3.4"
+rand = "0.7"
