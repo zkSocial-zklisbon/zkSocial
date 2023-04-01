@@ -1,13 +1,23 @@
 //! Degrees of Separation (DOS)
 //!
 //! This is a simple implementation of the Degrees of Separation algorithm
+use ed25519_proofs::{add_eddsa_targets, MessageDigest, PublicKey, Signature};
 use hex_literal::hex;
 use plonky2::{
     self,
     field::goldilocks_field::GoldilocksField,
-    plonk::config::{GenericConfig, PoseidonGoldilocksConfig},
+    field::types::Field,
+    iop::witness::WitnessWrite,
+    plonk::{
+        circuit_data::CircuitData,
+        config::{GenericConfig, PoseidonGoldilocksConfig},
+        proof::ProofWithPublicInputs,
+    },
 };
 
+mod original_voucher;
+// mod path_voucher;
+mod utils;
 mod voucher;
 
 pub(crate) const D: usize = 2;

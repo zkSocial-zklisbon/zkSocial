@@ -24,6 +24,7 @@ pub fn add_eddsa_targets<F: RichField + Extendable<D>, const D: usize>(
     public_key: PublicKey,
 ) {
     // first verify the signature before attempting to prove it
+    // todo:
 
     // build verification circuit
     let msg_len = message.len();
