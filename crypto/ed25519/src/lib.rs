@@ -2,7 +2,7 @@ use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::witness::PartialWitness,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_ed25519::gadgets::eddsa::{EDDSATargets, fill_circuits, make_verify_circuits};
+use plonky2_ed25519::gadgets::eddsa::{fill_circuits, make_verify_circuits, EDDSATargets};
 
 // we can hash messages to a 256bit hash.
 pub type MessageDigest = [u8; 32];
@@ -19,7 +19,7 @@ pub fn add_eddsa_targets<F: RichField + Extendable<D>, const D: usize>(
     message: MessageDigest,
     signature: Signature,
     public_key: PublicKey,
-) {
+) -> EDDSATargets {
     // first verify the signature before attempting to prove it
     // todo:
 
@@ -34,4 +34,6 @@ pub fn add_eddsa_targets<F: RichField + Extendable<D>, const D: usize>(
         public_key.as_ref(),
         &eddsa_targets,
     );
+
+    eddsa_targets
 }

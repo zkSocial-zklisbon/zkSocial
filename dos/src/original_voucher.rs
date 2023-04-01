@@ -1,10 +1,11 @@
-use plonky2::{iop::target::{Target, BoolTarget}, hash::hash_types::RichField, field::extension::Extendable};
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::RichField,
+    iop::target::{BoolTarget, Target},
+};
 
 use crate::{
-    add_eddsa_targets,
-    utils::get_circuit_builder_and_partial_witness,
-    voucher::Voucher,
-    *,
+    add_eddsa_targets, utils::get_circuit_builder_and_partial_witness, voucher::Voucher, *,
 };
 
 use ed25519_proofs::Ed25519Targets;
@@ -22,7 +23,6 @@ pub struct OriginVoucherTargets {
     pub(crate) degree: Target,
     pub(crate) eddsa: Ed25519Targets,
 }
-
 
 fn origin_vouch(origin: PublicKey, signature: Signature) -> OriginVoucher {
     let (mut circuit_builder, mut partial_witness) = get_circuit_builder_and_partial_witness();
@@ -75,16 +75,23 @@ impl Voucher for OriginVoucher {
         origin: PublicKey,
         locus: PublicKey,
         signature: Signature,
-        input_degree: F,
     ) -> Self {
         unimplemented!("Implement me");
     }
 
-    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D>{
+    fn proof_data(&self) -> &ProofWithPublicInputs<F, C, D> {
         &self.proof_data
     }
 
     fn origin(&self) -> PublicKey {
+        self.origin
+    }
+
+    fn circuit_data(&self) -> &CircuitData<F, C, D> {
+        &self.circuit_data
+    }
+
+    fn locus(&self) -> PublicKey {
         self.origin
     }
 }
@@ -92,15 +99,14 @@ impl Voucher for OriginVoucher {
 // pub fn make_all_origin_voucher_targets<F: RichField + Extendable<D>, const D: usize>(
 //     circuit_builder: &mut CircuitBuilder<F, D>,
 // ) -> OriginVoucherTargets {
-//     // allocate a vector of binary (bool) targets 
+//     // allocate a vector of binary (bool) targets
 //     // for each of the origin, signature and message
 //     let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
 //     let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
 //     let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
-    
+
 //     // add a single target for the degree
 //     let degree_target: Target = circuit_builder.add_virtual_target();
-
 
 //     // let eddsa = make_verify_circuits(circuit_builder, 32);
 
