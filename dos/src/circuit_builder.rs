@@ -79,7 +79,7 @@ pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_c
     let inner_proof_targets = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
     let inner_verify_data_targets = builder.add_virtual_verifier_data(inner_circuit_data.common.config.fri_config.cap_height);
 
-
+    builder.verify_proof::<C>(&inner_proof_targets, &inner_verify_data_targets, &inner_circuit_data.common);
     unimplemented!();
 }
 
