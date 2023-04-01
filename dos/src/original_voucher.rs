@@ -7,7 +7,9 @@ use crate::{
     *,
 };
 
-use ed25519_proofs::Ed25519Targets;
+use crate::path_voucher::PathVoucher;
+
+use ed25519_proofs::{Ed25519Targets, make_ed25519_verification_ciruit};
 
 pub struct OriginVoucher {
     pub(crate) origin: PublicKey,
@@ -23,16 +25,16 @@ pub struct OriginVoucherTargets {
     pub(crate) eddsa: Ed25519Targets,
 }
 
-
-fn origin_vouch(origin: PublicKey, signature: Signature) -> OriginVoucher {
+/// make a new origin voucher
+pub fn make_origin_voucher(origin: PublicKey, signature: Signature) -> OriginVoucher {
     let (mut circuit_builder, mut partial_witness) = get_circuit_builder_and_partial_witness();
 
     // Steps:
     //  1. have PI target for the degree to be zero (constant target == 0)
     //  2. Verify signature of origin signing (message hash of) origin
 
-    // let voucher_targets =
-    //     make_all_origin_voucher_targets(&mut circuit_builder);
+    let voucher_targets =
+        make_origin_voucher_circuit(&mut circuit_builder);
     let zero_degree_target = circuit_builder.add_virtual_target();
     let message: [u8; MESSAGE_LENGTH] = origin.clone();
     add_eddsa_targets(
@@ -76,7 +78,7 @@ impl Voucher for OriginVoucher {
         locus: PublicKey,
         signature: Signature,
         input_degree: F,
-    ) -> Self {
+    ) -> PathVoucher {
         unimplemented!("Implement me");
     }
 
@@ -89,29 +91,47 @@ impl Voucher for OriginVoucher {
     }
 }
 
-// pub fn make_all_origin_voucher_targets<F: RichField + Extendable<D>, const D: usize>(
-//     circuit_builder: &mut CircuitBuilder<F, D>,
-// ) -> OriginVoucherTargets {
-//     // allocate a vector of binary (bool) targets 
-//     // for each of the origin, signature and message
-//     let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
-//     let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
-//     let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
+
+/// make all the targets for the origin voucher
+fn make_origin_voucher_circuit<F: RichField + Extendable<D>, const D: usize>(
+    circuit_builder: &mut CircuitBuilder<F, D>,
+) -> OriginVoucherTargets {
+    // allocate a vector of binary (bool) targets 
+    // for each of the origin, signature and message
+    let origin_targets: Vec<BoolTarget> = Vec::with_capacity(PUBLIC_KEY_LENGTH_BITS);
+    let signature_targets: Vec<BoolTarget> = Vec::with_capacity(SIGNATURE_LENGTH_BITS);
+    let message_targets: Vec<BoolTarget> = Vec::with_capacity(MESSAGE_LENGTH_BITS);
     
-//     // add a single target for the degree
-//     let degree_target: Target = circuit_builder.add_virtual_target();
+    // add a single target for the degree
+    let degree_target: Target = circuit_builder.add_virtual_target();
 
+    // create targets for the origin address
+    for i in 0..PUBLIC_KEY_LENGTH_BITS {
+        origin_targets.push(circuit_builder.add_virtual_bool_target_safe());
+    }
 
-//     // let eddsa = make_verify_circuits(circuit_builder, 32);
+    // create targets for the signature
+    for i in 0..SIGNATURE_LENGTH_BITS {
+        signature_targets.push(circuit_builder.add_virtual_bool_target_safe());
+    }
 
-//     OriginVoucherTargets {
-//         origin,
-//         signature,
-//         message,
-//         degree,
-//         eddsa,
-//     }
-// }
+    // create targets for the message
+    for i in 0..MESSAGE_LENGTH_BITS {
+        message_targets.push(circuit_builder.add_virtual_bool_target_safe());
+    }
+
+    // create targets for the eddsa
+    let ed25519_targets: Ed25519Targets =
+        make_ed25519_verification_ciruit(circuit_builder, MESSAGE_LENGTH_BITS);
+
+    OriginVoucherTargets {
+        origin,
+        signature,
+        message,
+        degree,
+        eddsa,
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -128,7 +148,7 @@ mod tests {
         let message = origin.clone();
         let signature = key_pair.sign(&message).to_bytes();
 
-        let origin_voucher: OriginVoucher = origin_vouch(origin, signature);
+        let origin_voucher: OriginVoucher = make_origin_voucher(origin, signature);
         assert!(origin_voucher.verify());
     }
 

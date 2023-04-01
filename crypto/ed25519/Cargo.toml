@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 plonky2 = { git = "https://github.com/polymerdao/plonky2", rev = "4cb0b48df1d227d5461a4c28ed025aaea64e2e62" }
 plonky2_ed25519 = {git = "https://github.com/zkSocial-zklisbon/plonky2-ed25519.git", branch = "main"}
+plonky2_sha512 = { git = "https://github.com/polymerdao/plonky2-sha512", rev = "6504a307448fdcc8c2daf000150a1f5691a4f8ef" }
