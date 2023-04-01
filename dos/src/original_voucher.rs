@@ -1,11 +1,26 @@
+use plonky2::iop::target::{Target, BoolTarget};
+
 use crate::{
-    add_eddsa_targets, utils::get_circuit_builder_and_partial_witness, voucher::Voucher, *,
+    add_eddsa_targets,
+    utils::get_circuit_builder_and_partial_witness,
+    voucher::Voucher,
+    EDDSATargets,
+    *,
 };
 
 pub struct OriginVoucher {
     pub(crate) origin: PublicKey,
     pub(crate) circuit_data: CircuitData<F, C, D>,
     pub(crate) proof_data: ProofWithPublicInputs<F, C, D>,
+}
+
+pub struct OriginVoucherTargets {
+    pub(crate) origin: Vec<BoolTarget>,
+    pub(crate) signature: Vec<BoolTarget>,
+    pub(crate) message: Vec<BoolTarget>,
+    pub(crate) degree: Target,
+    pub(crate) eddsa: EDDSATargets,
+
 }
 
 impl Voucher for OriginVoucher {
@@ -15,6 +30,8 @@ impl Voucher for OriginVoucher {
         // Steps:
         //  1. have PI target for the degree to be zero (constant target == 0)
         //  2. Verify signature of origin signing (message hash of) origin
+
+        let voucher_targets = make_all_voucher_targets(&mut circuit_builder);
         let zero_degree_target = circuit_builder.add_virtual_target();
         let message = origin.clone();
         add_eddsa_targets(

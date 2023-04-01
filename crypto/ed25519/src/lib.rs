@@ -16,6 +16,8 @@ pub type Signature = [u8; 64];
 // ed25519 public key is 256 bits long.
 pub type PublicKey = [u8; 32];
 
+use plonky2_ed25519::gadgets::eddsa::EDDSATargets;
+
 pub fn add_eddsa_targets<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     partial_witness: &mut PartialWitness<F>,
