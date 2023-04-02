@@ -1,8 +1,14 @@
 use plonky2::{
-    iop::{target::Target, witness::{PartialWitness, WitnessWrite}}, 
-    plonk::{circuit_builder::CircuitBuilder, circuit_data::{CircuitData, VerifierCircuitTarget}},
-    hash::poseidon::PoseidonHash,
     field::types::Field,
+    hash::poseidon::PoseidonHash,
+    iop::{
+        target::Target,
+        witness::{PartialWitness, WitnessWrite},
+    },
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{CircuitData, VerifierCircuitTarget},
+    },
 };
 use simple_crypto::{C, D, DIGEST_LENGTH, F, PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH};
 
@@ -23,7 +29,7 @@ pub struct ExtendedVoucherTargets {
     pub(crate) outer_signature_targets: Vec<Target>,
     pub(crate) outer_degree_target: Target,
     pub(crate) private_key_targets: Vec<Target>,
-    pub(crate) inner_verify_data_targets: VerifierCircuitTarget,
+    // pub(crate) inner_verify_data_targets: VerifierCircuitTarget,
 }
 
 pub fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> VoucherTargets {
@@ -65,15 +71,22 @@ pub fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> Vouche
         [private_key_targets.clone(), topic_public_key_targets].concat(),
     );
     for i in 0..PUBLIC_KEY_LENGTH {
-        builder.connect(origin_targets[i], should_be_public_key_origin_targets.elements[i]);
+        builder.connect(
+            origin_targets[i],
+            should_be_public_key_origin_targets.elements[i],
+        );
     }
 
     // the prover must sign the locus correctly, so they should hash the public key
     // (origin) with the message (locuss)
-    let should_be_signature_targets =
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>([origin_targets.clone(), locus_targets.clone()].concat());
+    let should_be_signature_targets = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+        [origin_targets.clone(), locus_targets.clone()].concat(),
+    );
     for i in 0..DIGEST_LENGTH {
-        builder.connect(signature_targets[i], should_be_signature_targets.elements[i]);
+        builder.connect(
+            signature_targets[i],
+            should_be_signature_targets.elements[i],
+        );
     }
 
     VoucherTargets {
@@ -85,7 +98,10 @@ pub fn make_origin_voucher_circuit(builder: &mut CircuitBuilder<F, D>) -> Vouche
     }
 }
 
-pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_circuit_data: &CircuitData<F, C, D>) -> ExtendedVoucherTargets {
+pub fn make_extended_voucher_circuit(
+    builder: &mut CircuitBuilder<F, D>,
+    inner_circuit_data: &CircuitData<F, C, D>,
+) -> ExtendedVoucherTargets {
     // allocate targets for the public inputs
     let outer_origin_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
     let outer_locus_targets = builder.add_virtual_targets(PUBLIC_KEY_LENGTH);
@@ -115,9 +131,11 @@ pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_c
     }
 
     // outer locus and origin should be distinct
-    let mut bool_cumulative_target = builder.is_equal(outer_locus_targets[0], outer_origin_targets[0]);
+    let mut bool_cumulative_target =
+        builder.is_equal(outer_locus_targets[0], outer_origin_targets[0]);
     for i in 1..PUBLIC_KEY_LENGTH {
-        let equality_element_target = builder.is_equal(outer_locus_targets[i], outer_origin_targets[i]);
+        let equality_element_target =
+            builder.is_equal(outer_locus_targets[i], outer_origin_targets[i]);
         bool_cumulative_target = builder.and(bool_cumulative_target, equality_element_target);
     }
     let origin_and_locus_must_not_be_equal_target = builder.not(bool_cumulative_target);
@@ -138,22 +156,29 @@ pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_c
         [private_key_targets.clone(), topic_public_key_targets].concat(),
     );
     for i in 0..PUBLIC_KEY_LENGTH {
-        builder.connect(inner_locus_targets[i], should_be_public_key_inner_locus_targets.elements[i]);
+        builder.connect(
+            inner_locus_targets[i],
+            should_be_public_key_inner_locus_targets.elements[i],
+        );
     }
 
     // the prover must sign the outer locus correctly, so they should hash the public key
     // (origin) with the message (outer locus)
-    let should_be_signature_targets =
-        builder.hash_n_to_hash_no_pad::<PoseidonHash>([inner_locus_targets.clone(), outer_locus_targets.clone()].concat());
+    let should_be_signature_targets = builder.hash_n_to_hash_no_pad::<PoseidonHash>(
+        [inner_locus_targets.clone(), outer_locus_targets.clone()].concat(),
+    );
     for i in 0..DIGEST_LENGTH {
-        builder.connect(outer_signature_targets[i], should_be_signature_targets.elements[i]);
+        builder.connect(
+            outer_signature_targets[i],
+            should_be_signature_targets.elements[i],
+        );
     }
-    
-    let inner_proof_targets = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
-    let inner_verify_data_targets = builder.add_virtual_verifier_data(inner_circuit_data.common.config.fri_config.cap_height);
 
-    builder.verify_proof::<C>(&inner_proof_targets, &inner_verify_data_targets, &inner_circuit_data.common);
-    
+    // let inner_proof_targets = builder.add_virtual_proof_with_pis(&inner_circuit_data.common);
+    // let inner_verify_data_targets = builder.add_virtual_verifier_data(inner_circuit_data.common.config.fri_config.cap_height);
+
+    // builder.verify_proof::<C>(&inner_proof_targets, &inner_verify_data_targets, &inner_circuit_data.common);
+
     ExtendedVoucherTargets {
         inner_origin_targets,
         inner_locus_targets,
@@ -163,13 +188,13 @@ pub fn make_extended_voucher_circuit(builder: &mut CircuitBuilder<F, D>, inner_c
         outer_signature_targets,
         outer_degree_target,
         private_key_targets,
-        inner_verify_data_targets,
+        // inner_verify_data_targets,
     }
 }
 
 pub fn fill_origin_voucher_circuit(
-    partial_witness: &mut PartialWitness<F>, 
-    voucher_targets: VoucherTargets, 
+    partial_witness: &mut PartialWitness<F>,
+    voucher_targets: VoucherTargets,
     origin: [F; PUBLIC_KEY_LENGTH],
     locus: [F; PUBLIC_KEY_LENGTH],
     private_key: [F; PRIVATE_KEY_LENGTH],
@@ -197,7 +222,7 @@ pub fn fill_origin_voucher_circuit(
     for i in 0..DIGEST_LENGTH {
         partial_witness.set_target(signature_targets[i], signature[i]);
     }
-    
+
     // todo: we already set degree to zero in the circuit, so this is redundant
     // partial_witness.set_target(degree_target, F::ZERO);
 
@@ -208,8 +233,8 @@ pub fn fill_origin_voucher_circuit(
 }
 
 pub fn fill_extend_voucher_circuit(
-    partial_witness: &mut PartialWitness<F>, 
-    voucher_targets: ExtendedVoucherTargets, 
+    partial_witness: &mut PartialWitness<F>,
+    voucher_targets: ExtendedVoucherTargets,
     origin: [F; PUBLIC_KEY_LENGTH],
 
     inner_locus: [F; PUBLIC_KEY_LENGTH],
@@ -228,7 +253,7 @@ pub fn fill_extend_voucher_circuit(
         outer_signature_targets,
         outer_degree_target,
         private_key_targets,
-        inner_verify_data_targets,
+        // inner_verify_data_targets,
     } = voucher_targets;
 
     // fill both origin targets with origin entries
@@ -253,8 +278,13 @@ pub fn fill_extend_voucher_circuit(
         partial_witness.set_target(private_key_targets[i], private_key[i]);
     }
 
-    // fill targets for verified circuit data
-    partial_witness.set_cap_target(&inner_verify_data_targets.constants_sigmas_cap, &inner_circuit_data.verifier_only.constants_sigmas_cap);
-    partial_witness.set_hash_target(inner_verify_data_targets.circuit_digest, inner_circuit_data.verifier_only.circuit_digest);
-
+    // // fill targets for verified circuit data
+    // partial_witness.set_cap_target(
+    //     &inner_verify_data_targets.constants_sigmas_cap,
+    //     &inner_circuit_data.verifier_only.constants_sigmas_cap,
+    // );
+    // partial_witness.set_hash_target(
+    //     inner_verify_data_targets.circuit_digest,
+    //     inner_circuit_data.verifier_only.circuit_digest,
+    // );
 }
