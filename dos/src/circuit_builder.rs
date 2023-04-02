@@ -140,7 +140,7 @@ pub fn make_extended_voucher_circuit(
             builder.is_equal(outer_locus_targets[i], outer_origin_targets[i]);
         bool_cumulative_target = builder.and(bool_cumulative_target, equality_element_target);
     }
-    let origin_and_locus_must_not_be_equal_target = builder.not(bool_cumulative_target);
+    let _origin_and_locus_must_not_be_equal_target = builder.not(bool_cumulative_target);
 
     // the outer degree must be one more than the inner degree
     let one_target = builder.constant(F::ONE);
@@ -292,15 +292,6 @@ pub fn fill_extend_voucher_circuit(
     }
 
     // fill targets for verified circuit data
-    // partial_witness.set_cap_target(
-    //     &inner_verify_data_targets.constants_sigmas_cap,
-    //     &inner_circuit_data.verifier_only.constants_sigmas_cap,
-    // );
-    // partial_witness.set_hash_target(
-    //     inner_verify_data_targets.circuit_digest,
-    //     inner_circuit_data.verifier_only.circuit_digest,
-    // );
-
     partial_witness.set_proof_with_pis_target(&inner_proof_targets, inner_proof_with_pis);
     partial_witness.set_verifier_data_target(
         &inner_verify_data_targets,
