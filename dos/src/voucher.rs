@@ -86,9 +86,12 @@ impl Voucher {
         let mut circuit_builder = CircuitBuilder::<F, D>::new(config);
         let mut partial_witness = PartialWitness::<F>::new();
 
-        let inner_circuit_data = match &self.voucher_proof_data {
+        let (inner_circuit_data, inner_proof_with_pis) = match &self.voucher_proof_data {
             VoucherProofData::PathProofData { .. } => unimplemented!(),
-            VoucherProofData::OriginProofData { circuit_data, .. } => circuit_data,
+            VoucherProofData::OriginProofData {
+                circuit_data,
+                proof_data,
+            } => (circuit_data, proof_data),
         };
         let voucher_targets =
             make_extended_voucher_circuit(&mut circuit_builder, inner_circuit_data);
@@ -103,6 +106,7 @@ impl Voucher {
             inner_private_key_locus,
             outer_signature,
             inner_circuit_data,
+            inner_proof_with_pis,
         );
 
         let circuit_data = circuit_builder.build::<C>();
@@ -168,11 +172,14 @@ mod tests {
             Voucher::new_origin(origin_key_pair.public_key, origin_key_pair.private_key);
         let extended_voucher = origin_voucher_copy.extend_voucher(origin_private_key, outer_locus);
 
-        // match extended_voucher.voucher_proof_data {
-        //     VoucherProofData::OriginProofData { .. } => panic!("No cuteness today"),
-        //     VoucherProofData::PathProofData { circuit_data, proof_data } => {
-        //         assert!(circuit_data.verify(proof_data).is_ok())
-        //     }
-        // }
+        match extended_voucher.voucher_proof_data {
+            VoucherProofData::OriginProofData { .. } => panic!("No cuteness today"),
+            VoucherProofData::PathProofData {
+                circuit_data,
+                proof_data,
+            } => {
+                assert!(circuit_data.verify(proof_data).is_ok())
+            }
+        }
     }
 }
