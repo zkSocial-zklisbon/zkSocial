@@ -17,7 +17,9 @@ use plonky2::{
 use crate::circuit_builder::{
     make_origin_voucher_circuit, 
     make_extended_voucher_circuit,
-    fill_voucher_circuit};
+    fill_origin_voucher_circuit, 
+    fill_extend_voucher_circuit,
+};
 
 pub struct Voucher {
     pub(crate) origin: PublicKey,
@@ -51,7 +53,7 @@ impl Voucher {
         let mut partial_witness = PartialWitness::<F>::new();
 
         let voucher_targets = make_origin_voucher_circuit(&mut circuit_builder);
-        fill_voucher_circuit(&mut partial_witness, voucher_targets, origin, locus, private_key, signature);
+        fill_origin_voucher_circuit(&mut partial_witness, voucher_targets, origin, locus, private_key, signature);
 
         let circuit_data = circuit_builder.build::<C>();
         let proof_with_pis = 
@@ -76,6 +78,7 @@ impl Voucher {
     ) -> Voucher {
         let outer_origin: PublicKey = self.origin.clone();
         let inner_locus: PublicKey = self.locus.clone();
+        let inner_degree: F = self.degree;
 
         let outer_signature: Digest = 
             PoseidonHash::hash_no_pad(
@@ -90,11 +93,34 @@ impl Voucher {
         let inner_circuit_data = match &self.voucher_proof_data {
             VoucherProofData::PathProofData { .. } => unimplemented!(),
             VoucherProofData::OriginProofData { circuit_data, .. } => {
-                circuit_data.clone()
+                circuit_data
             },
         };
         let voucher_targets = make_extended_voucher_circuit(&mut circuit_builder, inner_circuit_data);
-        unimplemented!()
+
+        fill_extend_voucher_circuit(
+            &mut partial_witness, 
+            voucher_targets, 
+            outer_origin, 
+            inner_locus, 
+            inner_degree,
+            outer_locus,
+            inner_private_key_locus, 
+            outer_signature,
+            inner_circuit_data,
+        );
+
+        let circuit_data = circuit_builder.build::<C>();
+        let proof_with_pis = 
+            circuit_data.prove(partial_witness).expect(
+                "Failed to prove origin voucher circuit");
+        
+        Voucher {
+            origin: outer_origin,
+            locus: outer_locus,
+            degree: inner_degree + F::ONE,
+            voucher_proof_data: VoucherProofData::PathProofData { circuit_data, proof_data: proof_with_pis },
+        }
     }
 
     // fn verify
@@ -114,6 +140,32 @@ mod tests {
             VoucherProofData::PathProofData { .. } => panic!("Expected origin voucher proof data"),
             VoucherProofData::OriginProofData { circuit_data, proof_data } => {
                 assert!(circuit_data.verify(proof_data).is_ok());
+            }
+        }
+    }
+
+    #[test]
+    fn it_works_extended_voucher() { 
+        let origin_key_pair = KeyPair::generate_key_pair();
+        let origin_private_key = origin_key_pair.private_key.clone();
+        let outer_locus = KeyPair::generate_key_pair().public_key;
+        let origin_voucher = Voucher::new_origin(origin_key_pair.public_key, origin_key_pair.private_key);
+        
+        let origin_voucher_proof_data = origin_voucher.voucher_proof_data;
+        match origin_voucher_proof_data {
+            VoucherProofData::PathProofData { .. } => panic!("Expected origin voucher proof data"),
+            VoucherProofData::OriginProofData { circuit_data, proof_data } => {
+                assert!(circuit_data.verify(proof_data).is_ok());
+            }
+        }
+        
+        let origin_voucher_copy = Voucher::new_origin(origin_key_pair.public_key, origin_key_pair.private_key);
+        let extended_voucher = origin_voucher_copy.extend_voucher(origin_private_key, outer_locus);
+
+        match extended_voucher.voucher_proof_data {
+            VoucherProofData::OriginProofData { .. } => panic!("No cuteness today"),
+            VoucherProofData::PathProofData { circuit_data, proof_data } => {
+                assert!(circuit_data.verify(proof_data).is_ok())
             }
         }
     }
